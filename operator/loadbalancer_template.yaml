@@ -1,0 +1,14 @@
+apiVersion: servicefunctionchain.polito.it/v1
+kind: LoadBalancer
+metadata:
+  name: "{name}"
+spec:
+  targetNodeName: "{target_node}"
+
+  frontend:
+    name: "{fe_name}"
+    interface: "{fe_interface}"
+
+  backend:
+    name: "{be_name}"
+    interface: "{be_interface}"

@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: controller-manager
+  namespace: operator-system
+  labels:
+    control-plane: controller-manager
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+    #  tolerations:
+    # this toleration is to have the daemonset runnable on master nodes
+    # remove it if your masters can't run pods
+    #  - key: node-role.kubernetes.io/master
+    #    operator: Exists
+    #    effect: NoSchedule
+      containers:
+      - name: manager
+        image: fmonaco96/sfc-k8s:latest
+        imagePullPolicy: IfNotPresent
+
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/cni-plugins/install-cni.sh"]
+
+          preStop:
+            exec:
+              command: ["/cni-plugins/uninstall-cni.sh"]
+        
+        securityContext:
+          privileged: true
+        
+        volumeMounts:
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
+        # For pinning maps we need to be able to mount the BPF filesystem at /sys/fs/bpf so we mount in the
+        # parent folder
+        - name: sysfs
+          mountPath: /sys/fs/
+          # Bidirectional means that, if we mount the BPF filesystem at /sys/fs/bpf it will propagate to the host.
+          # If the host is known to mount that filesystem already then Bidirectional can be omitted.
+          mountPropagation: Bidirectional
+        - name: cni-bin-dir
+          mountPath: /host/opt/cni/bin
+        
+        # TODO(user): Configure the resources accordingly based on the project requirements.
+        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        # resources:
+        #   limits:
+        #     cpu: 500m
+        #     memory: 128Mi
+        #   requests:
+        #     cpu: 10m
+        #     memory: 64Mi
+
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+      - name: sysfs
+        hostPath:
+          path: /sys/fs/
+          type: DirectoryOrCreate
+      - name: cni-bin-dir
+        hostPath:
+          path: /opt/cni/bin

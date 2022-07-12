@@ -1,0 +1,21 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true # disable kindnet
+  # podSubnet: 192.168.0.0/16 # calico
+  podSubnet: 10.244.0.0/16 # flannel
+
+nodes:
+- role: control-plane
+
+- role: worker
+  extraMounts:
+  - hostPath: /lib/modules/5.11.0-41-generic
+    containerPath: /lib/modules/5.11.0-41-generic
+    readOnly: true
+
+- role: worker
+  extraMounts:
+  - hostPath: /lib/modules/5.11.0-41-generic
+    containerPath: /lib/modules/5.11.0-41-generic
+    readOnly: true
