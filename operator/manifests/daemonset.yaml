@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: controller-manager
-  namespace: operator-system
+  name: sfc-manager
+  namespace: sfc-operator
   labels:
-    control-plane: controller-manager
+    control-plane: sfc-manager
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: sfc-manager
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: controller-manager
+        control-plane: sfc-manager
     spec:
     #  tolerations:
     # this toleration is to have the daemonset runnable on master nodes
@@ -65,7 +65,7 @@ spec:
 
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      serviceAccountName: controller-manager
+      serviceAccountName: sfc-manager
       terminationGracePeriodSeconds: 10
       volumes:
       - name: lib-modules

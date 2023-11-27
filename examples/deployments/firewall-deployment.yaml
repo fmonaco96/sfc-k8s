@@ -1,0 +1,27 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: firewall-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      servicefunctionchain.polito.it/networkFunction: firewall
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: sfc-ptp-firewall-1@eth1, sfc-ptp-firewall-2@eth2
+      labels:
+        servicefunctionchain.polito.it/networkFunction: firewall
+    spec:
+      containers:
+      - name: firewall
+        image: fmonaco96/iptables-firewall:latest
+        imagePullPolicy: IfNotPresent
+        command: [ "/setup-iptables-firewall.sh" ]
+        args: [ "eth1", "eth2" ]
+        securityContext:
+          privileged: true
+      terminationGracePeriodSeconds: 2
+      nodeSelector: # Set the node name
+        # kubernetes.io/hostname: node1

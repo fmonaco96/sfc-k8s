@@ -1,0 +1,19 @@
+apiVersion: servicefunctionchain.polito.it/v1
+kind: ServiceFunctionChain
+metadata:
+  name: transparent-firewall
+spec:
+  targetNodeName: kind-worker
+  networkFunctions:
+  - name: client
+    links:
+      firewall: eth1
+
+  - name: firewall
+    links:
+      client: eth1
+      gw: eth2
+
+  - name: gw
+    links:
+      firewall: eth1

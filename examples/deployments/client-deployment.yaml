@@ -1,0 +1,24 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: client-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      servicefunctionchain.polito.it/networkFunction: client
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: sfc-ptp-client@eth1
+      labels:
+        servicefunctionchain.polito.it/networkFunction: client
+    spec:
+      containers:
+      - name: client
+        image: fmonaco96/iperf3-client:latest
+        # command: ["sleep"]
+        # args: ["1d"]
+      terminationGracePeriodSeconds: 2
+      nodeSelector: # Set the node name
+        # kubernetes.io/hostname: node1

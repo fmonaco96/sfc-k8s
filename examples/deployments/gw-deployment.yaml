@@ -1,0 +1,22 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: gw-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      servicefunctionchain.polito.it/networkFunction: gw
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: sfc-ptp-gw@eth1
+      labels:
+        servicefunctionchain.polito.it/networkFunction: gw
+    spec:
+      containers:
+      - name: alpine
+        image: fmonaco96/iperf3-server
+      terminationGracePeriodSeconds: 2
+      nodeSelector: # Set the node name
+        # kubernetes.io/hostname: node1

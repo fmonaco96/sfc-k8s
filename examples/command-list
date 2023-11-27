@@ -1,0 +1,53 @@
+# Install linux headers on all nodes (required by BCC)
+sudo apt-get install linux-headers-$(uname -r)
+
+# Install calico CNI plugin (if not installed)
+# kubectl create -f ./test-cluster/calico.yaml
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.4/manifests/calico.yaml
+# kubectl -n kube-system set env daemonset/calico-node FELIX_IGNORELOOSERPF=true
+
+# Install multus CNI
+kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml
+
+# Install sfc operator 
+kubectl create -f ../operator/manifests/servicefunctionchain_crd.yaml
+kubectl create -f ../operator/manifests/servicefunctionchain_lb_crd.yaml
+kubectl create -f ../operator/manifests/rbac.yaml
+kubectl create -f ../operator/manifests/daemonset.yaml
+
+# Create NetworkAttachmentDefinition CRDs
+kubectl create -f ./crds/net-attach-def/sfc-ptp-client.yaml
+kubectl create -f ./crds/net-attach-def/sfc-ptp-firewall-1.yaml
+kubectl create -f ./crds/net-attach-def/sfc-ptp-firewall-2.yaml
+kubectl create -f ./crds/net-attach-def/sfc-ptp-gw.yaml
+
+# Deploy NFs pods
+# TODO: we need to customize the node selector!
+kubectl create -f deployments/client-deployment.yaml
+kubectl create -f deployments/firewall-deployment.yaml
+kubectl create -f deployments/gw-deployment.yaml
+
+# Create SFC
+# TODO: we need to customize the node selector!
+kubectl create -f ./crds/sfc/service-function-chain-sample.yaml
+
+### SHELL 1 ###
+# Enter client pod
+kubectl exec -it $(kubectl get pods | grep client-deployment | cut -d " " -f 1) -- sh
+# Ping GW (from within the client pod)
+ping 10.240.0.254
+
+### SHELL 2 ###
+# Monitor firewall rules (execute in another shell)
+# In this way we can understand where packets are passing
+./scripts/firewall/monitor-firewall-rules.sh 
+
+### SHELL 1 ###
+# iperf towards GW with 10 parallel streams (from within the client pod)
+# (in the other shell runing the firewall monitor, we can see packets passing in all instances)
+iperf3 -c 10.240.0.254 -P 10 -t 5
+
+### SHELL 3 ###
+# Scale firewall deployment (from another shell)
+kubectl scale --replicas=3 deployment.apps/firewall-deployment
+
